@@ -1,20 +1,20 @@
-<div *ngIf="loading">
+<ng-container *ngIf="loading$ | async">
   <div class="loader-backdrop">
-    <mat-spinner style="stroke: crimson;  top: 50%; left: 50%;"></mat-spinner>
+    <mat-spinner class="loader-spin"></mat-spinner>
   </div>
-</div>
+</ng-container>
 
-<ng-container *ngIf="(displayData$ | async) as data">
+<ng-container *ngIf="displayData$ | async as data">
   <div class="card-container">
-    <mat-card *ngFor="let user of data; let i = index" [class.edit-mode]="editMode && i === editId">
+    <mat-card *ngFor="let user of data; let i = index">
       <mat-card-content>
-        <div *ngIf="!editMode || user.id !== editId">
+        <div *ngIf="!(editMode$ | async) || user.id !== (editId$ | async)">
           <h2>{{ user.name }}</h2>
           <p>Email: {{ user.email }}</p>
           <p>Username: {{ user.username }}</p>
           <p>Phone: {{ user.phone }}</p>
         </div>
-        <div *ngIf="editMode && user.id === editId">
+        <div *ngIf="(editMode$ | async) && user.id === (editId$ | async)">
           <form [formGroup]="editForm">
             <mat-form-field>
               <label>Name</label>
@@ -36,13 +36,12 @@
         </div>
       </mat-card-content>
       <mat-card-actions>
-        <button mat-button *ngIf=" !editMode || (editMode  && user.id !== editId)" (click)="deleteUser(user.id)" class="secondary-btn">Delete</button>
-        <button mat-button (click)="toggleEditMode(user.id)" [disabled]="editMode && user.id !== editId" [ngClass]="(editMode && user.id === editId) ? 'secondary-btn' : 'primary-btn'">
-          {{ editMode && user.id === editId ? 'Cancel' : 'Edit' }}
+        <button mat-button *ngIf="!(editMode$ | async) || ((editMode$ | async) && user.id !== (editId$ | async))" (click)="deleteUser(user.id)" class="secondary-btn">Delete</button>
+        <button mat-button (click)="toggleEditMode(user.id)" [disabled]="(editMode$ | async) && user.id !== (editId$ | async)" [ngClass]="((editMode$ | async) && user.id === (editId$ | async)) ? 'secondary-btn' : 'primary-btn'">
+          {{ (editMode$ | async) && user.id === (editId$ | async) ? 'Cancel' : 'Edit' }}
         </button>
-        <button mat-button *ngIf="editMode && user.id === editId" (click)="saveChanges()" class="primary-btn">Save</button>
+        <button mat-button *ngIf="(editMode$ | async) && user.id === (editId$ | async)" (click)="saveChanges()" class="primary-btn">Save</button>
       </mat-card-actions>
     </mat-card>
   </div>
 </ng-container>
-

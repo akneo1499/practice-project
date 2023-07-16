@@ -5,9 +5,14 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ReactiveFormsModule } from '@angular/forms';
+import { StoreModule } from '@ngrx/store';
+import { EffectsModule } from '@ngrx/effects';
+import { appReducer } from './app.reducer';
+
 
 import { AppComponent } from './app.component';
 import { DataDisplayComponent } from './data-display/data-display.component';
+import { AppEffects } from './app.effects';
 
 @NgModule({
   declarations: [
@@ -20,7 +25,9 @@ import { DataDisplayComponent } from './data-display/data-display.component';
     HttpClientModule,
     ReactiveFormsModule,
     MatCardModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    StoreModule.forRoot({ app: appReducer }),
+    EffectsModule.forRoot([AppEffects])
   ],
   providers: [],
   bootstrap: [AppComponent]

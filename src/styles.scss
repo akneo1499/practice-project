@@ -1,33 +1,38 @@
+.loader-spin{
+  stroke: #2d2058;; 
+  top: 50%; 
+  left: 50%;
+}
+
 button {
   width: 50%;
   padding: 0.5rem;
   border: unset;
 
-  &:disabled{
+  &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
 }
-.primary-btn{
+
+.primary-btn {
   color: white;
-  background-color: rgb(39, 77, 218);
+  background-color: rgb(63, 159, 17)
 }
 
-.secondary-btn{
+.secondary-btn {
   color: white;
-  background-color: crimson;
+  background-color: #2d2058;
 }
 
-
-mat-form-field{
+mat-form-field {
   display: flex;
   flex-direction: column;
   margin-bottom: 0.5rem;
 
-  input{
+  input {
     border: unset;
     padding: 0.5rem;
     box-shadow: 1px 1px 5px 0px #cbcbcb;
-    max-width: 50%;
   }
 }

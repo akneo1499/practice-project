@@ -1,8 +1,13 @@
 import { Component, OnInit } from '@angular/core';
-import { ApiService } from '../api.service';
+import { FormControl, FormGroup } from '@angular/forms';
+import { Store } from '@ngrx/store';
 import { Observable, throwError } from 'rxjs';
 import { tap, finalize, catchError } from 'rxjs/operators';
-import { FormControl, FormGroup } from '@angular/forms';
+
+import * as AppActions from '../app.actions';
+import { AppState } from '../app.state';
+import { selectEditId, selectEditMode, selectLoading, selectUsers } from '../app.selectors';
+import { ApiService } from '../api.service';
 
 @Component({
   selector: 'app-data-display',
@@ -10,14 +15,15 @@ import { FormControl, FormGroup } from '@angular/forms';
   styleUrls: ['./data-display.component.scss']
 })
 export class DataDisplayComponent implements OnInit {
-  loading = false;
-  editMode = false;
-  editId = -1;
+  loading$: Observable<boolean>;
+  editMode$: Observable<boolean>;
+  editId$: Observable<number>;
+  displayData$: Observable<any[]>;
   editForm: FormGroup;
-  data$: Observable<any[]>;
-  displayData$: Observable<any>;
+  editId: any;
+  loading: boolean;
 
-  constructor(private apiService: ApiService) {
+  constructor(private store: Store<AppState>, private apiService: ApiService) {
     this.editForm = new FormGroup({
       name: new FormControl(''),
       email: new FormControl(''),
@@ -27,61 +33,59 @@ export class DataDisplayComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.loadData();
-    this.displayData$ = this.apiService.users$
-  }
+    this.loading$ = this.store.select(selectLoading);
+    this.editMode$ = this.store.select(selectEditMode);
+    this.editId$ = this.store.select(selectEditId);
+    this.displayData$ = this.store.select(selectUsers);
 
-  loadData() {
-    this.loading = true;
-    this.apiService.getUsers().pipe(
-      tap((data) => {this.loading = false; this.apiService.setUsers(data)})
-    ).subscribe((res) => {
-      this.apiService.setUsers(res)
-    })
+    this.store.dispatch(AppActions.loadUserData());
   }
 
   toggleEditMode(id: number) {
-    this.editMode = !this.editMode;
-    this.editId = this.editMode ? id : -1;
-
-    if (this.editMode) {
-      const user = this.editId >= 0 ? this.apiService.getUserById(this.editId) : null;
-      this.editForm.patchValue(user);
+    this.store.dispatch(AppActions.toggleEditMode({ editId: id }));
+    if(id > 0){
+      this.displayData$.subscribe(data => {
+        const user = data.find(u => u.id === id);
+        this.editForm.patchValue(user);
+      });
     }
   }
 
   saveChanges() {
     if (this.editForm.valid) {
-      const updatedUser = this.editForm.value;
-      const userId = this.apiService.getUserById(this.editId)?.id;
-      this.loading = true;
-      this.apiService.updateUser(userId, updatedUser)
-        .pipe(
-          tap(() => {
-            this.apiService.updateUserInArray(this.editId, updatedUser);
-            this.toggleEditMode(-1);
-          }),
-          catchError((error) => {
-            console.error('Error occurred while updating user:', error);
-            return throwError(error);
-          }),
-          finalize(()=> this.loading = false)
-        )
+      let updatedUser = this.editForm.value;
+      this.editId$.subscribe((id)=>{
+        updatedUser.id = id;
+      });
+      this.apiService.updateUser(updatedUser).pipe(
+        tap(() => {
+          this.store.dispatch(AppActions.updateUserInArray({ updatedUser }));
+          this.toggleEditMode(-1);
+        }),
+        catchError((error) => {
+          console.error('Error occurred while updating user:', error);
+          return throwError(error);
+        }),
+      )
         .subscribe();
     }
   }
 
   deleteUser(id: number) {
-    const userId = this.apiService.getUserById(id)?.id;
-    this.loading = true;
-    this.apiService.deleteUser(userId)
+    this.apiService.getUserById(id).subscribe(user => {
+      id = user.id
+    });
+    this.apiService.deleteUser(id)
       .pipe(
-        tap(() => {this.apiService.deleteUserFromArray(userId)}),
+        tap(() => {
+          this.store.dispatch(AppActions.deleteUserFromArray({ id: id }));
+        }),
         catchError((error) => {
           console.error('Error occurred while deleting user:', error);
           return throwError(error);
         }),
-        finalize(()=> this.loading = false)
-      ).subscribe()
+      )
+      .subscribe();
   }
 }
+
